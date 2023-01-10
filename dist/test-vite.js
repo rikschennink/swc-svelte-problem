@@ -1,238 +1,363 @@
-function m() {
+function noop() {
 }
-function B(t) {
-  return t();
+function run(fn) {
+  return fn();
 }
-function O() {
+function blank_object() {
   return /* @__PURE__ */ Object.create(null);
 }
-function x(t) {
-  t.forEach(B);
+function run_all(fns) {
+  fns.forEach(run);
 }
-function M(t) {
-  return typeof t == "function";
+function is_function(thing) {
+  return typeof thing === "function";
 }
-function P(t, e) {
-  return t != t ? e == e : t !== e || t && typeof t == "object" || typeof t == "function";
+function safe_not_equal(a, b) {
+  return a != a ? b == b : a !== b || (a && typeof a === "object" || typeof a === "function");
 }
-function K(t) {
-  return Object.keys(t).length === 0;
+function is_empty(obj) {
+  return Object.keys(obj).length === 0;
 }
-function d(t, e) {
-  t.appendChild(e);
+function append(target, node) {
+  target.appendChild(node);
 }
-function v(t, e, n) {
-  t.insertBefore(e, n || null);
+function insert(target, node, anchor) {
+  target.insertBefore(node, anchor || null);
 }
-function b(t) {
-  t.parentNode && t.parentNode.removeChild(t);
-}
-function q(t) {
-  return document.createElement(t);
-}
-function a(t) {
-  return document.createTextNode(t);
-}
-function L() {
-  return a(" ");
-}
-function Q(t) {
-  return Array.from(t.childNodes);
-}
-function z(t, e) {
-  e = "" + e, t.wholeText !== e && (t.data = e);
-}
-let j;
-function h(t) {
-  j = t;
-}
-const p = [], S = [], g = [], T = [], R = Promise.resolve();
-let E = !1;
-function U() {
-  E || (E = !0, R.then(D));
-}
-function C(t) {
-  g.push(t);
-}
-const w = /* @__PURE__ */ new Set();
-let $ = 0;
-function D() {
-  const t = j;
-  do {
-    for (; $ < p.length; ) {
-      const e = p[$];
-      $++, h(e), V(e.$$);
-    }
-    for (h(null), p.length = 0, $ = 0; S.length; )
-      S.pop()();
-    for (let e = 0; e < g.length; e += 1) {
-      const n = g[e];
-      w.has(n) || (w.add(n), n());
-    }
-    g.length = 0;
-  } while (p.length);
-  for (; T.length; )
-    T.pop()();
-  E = !1, w.clear(), h(t);
-}
-function V(t) {
-  if (t.fragment !== null) {
-    t.update(), x(t.before_update);
-    const e = t.dirty;
-    t.dirty = [-1], t.fragment && t.fragment.p(t.ctx, e), t.after_update.forEach(C);
+function detach(node) {
+  if (node.parentNode) {
+    node.parentNode.removeChild(node);
   }
 }
-const y = /* @__PURE__ */ new Set();
-let W;
-function F(t, e) {
-  t && t.i && (y.delete(t), t.i(e));
+function element(name) {
+  return document.createElement(name);
 }
-function X(t, e, n, r) {
-  if (t && t.o) {
-    if (y.has(t))
+function text(data) {
+  return document.createTextNode(data);
+}
+function space() {
+  return text(" ");
+}
+function children(element2) {
+  return Array.from(element2.childNodes);
+}
+function set_data(text2, data) {
+  data = "" + data;
+  if (text2.wholeText !== data)
+    text2.data = data;
+}
+let current_component;
+function set_current_component(component) {
+  current_component = component;
+}
+const dirty_components = [];
+const binding_callbacks = [];
+const render_callbacks = [];
+const flush_callbacks = [];
+const resolved_promise = Promise.resolve();
+let update_scheduled = false;
+function schedule_update() {
+  if (!update_scheduled) {
+    update_scheduled = true;
+    resolved_promise.then(flush);
+  }
+}
+function add_render_callback(fn) {
+  render_callbacks.push(fn);
+}
+const seen_callbacks = /* @__PURE__ */ new Set();
+let flushidx = 0;
+function flush() {
+  const saved_component = current_component;
+  do {
+    while (flushidx < dirty_components.length) {
+      const component = dirty_components[flushidx];
+      flushidx++;
+      set_current_component(component);
+      update(component.$$);
+    }
+    set_current_component(null);
+    dirty_components.length = 0;
+    flushidx = 0;
+    while (binding_callbacks.length)
+      binding_callbacks.pop()();
+    for (let i = 0; i < render_callbacks.length; i += 1) {
+      const callback = render_callbacks[i];
+      if (!seen_callbacks.has(callback)) {
+        seen_callbacks.add(callback);
+        callback();
+      }
+    }
+    render_callbacks.length = 0;
+  } while (dirty_components.length);
+  while (flush_callbacks.length) {
+    flush_callbacks.pop()();
+  }
+  update_scheduled = false;
+  seen_callbacks.clear();
+  set_current_component(saved_component);
+}
+function update($$) {
+  if ($$.fragment !== null) {
+    $$.update();
+    run_all($$.before_update);
+    const dirty = $$.dirty;
+    $$.dirty = [-1];
+    $$.fragment && $$.fragment.p($$.ctx, dirty);
+    $$.after_update.forEach(add_render_callback);
+  }
+}
+const outroing = /* @__PURE__ */ new Set();
+let outros;
+function transition_in(block, local) {
+  if (block && block.i) {
+    outroing.delete(block);
+    block.i(local);
+  }
+}
+function transition_out(block, local, detach2, callback) {
+  if (block && block.o) {
+    if (outroing.has(block))
       return;
-    y.add(t), W.c.push(() => {
-      y.delete(t), r && (n && t.d(1), r());
-    }), t.o(e);
-  } else
-    r && r();
+    outroing.add(block);
+    outros.c.push(() => {
+      outroing.delete(block);
+      if (callback) {
+        if (detach2)
+          block.d(1);
+        callback();
+      }
+    });
+    block.o(local);
+  } else if (callback) {
+    callback();
+  }
 }
-function Y(t) {
-  t && t.c();
+function create_component(block) {
+  block && block.c();
 }
-function G(t, e, n, r) {
-  const { fragment: f, after_update: s } = t.$$;
-  f && f.m(e, n), r || C(() => {
-    const i = t.$$.on_mount.map(B).filter(M);
-    t.$$.on_destroy ? t.$$.on_destroy.push(...i) : x(i), t.$$.on_mount = [];
-  }), s.forEach(C);
+function mount_component(component, target, anchor, customElement) {
+  const { fragment, after_update } = component.$$;
+  fragment && fragment.m(target, anchor);
+  if (!customElement) {
+    add_render_callback(() => {
+      const new_on_destroy = component.$$.on_mount.map(run).filter(is_function);
+      if (component.$$.on_destroy) {
+        component.$$.on_destroy.push(...new_on_destroy);
+      } else {
+        run_all(new_on_destroy);
+      }
+      component.$$.on_mount = [];
+    });
+  }
+  after_update.forEach(add_render_callback);
 }
-function H(t, e) {
-  const n = t.$$;
-  n.fragment !== null && (x(n.on_destroy), n.fragment && n.fragment.d(e), n.on_destroy = n.fragment = null, n.ctx = []);
+function destroy_component(component, detaching) {
+  const $$ = component.$$;
+  if ($$.fragment !== null) {
+    run_all($$.on_destroy);
+    $$.fragment && $$.fragment.d(detaching);
+    $$.on_destroy = $$.fragment = null;
+    $$.ctx = [];
+  }
 }
-function Z(t, e) {
-  t.$$.dirty[0] === -1 && (p.push(t), U(), t.$$.dirty.fill(0)), t.$$.dirty[e / 31 | 0] |= 1 << e % 31;
+function make_dirty(component, i) {
+  if (component.$$.dirty[0] === -1) {
+    dirty_components.push(component);
+    schedule_update();
+    component.$$.dirty.fill(0);
+  }
+  component.$$.dirty[i / 31 | 0] |= 1 << i % 31;
 }
-function I(t, e, n, r, f, s, i, c = [-1]) {
-  const u = j;
-  h(t);
-  const o = t.$$ = {
+function init(component, options, instance2, create_fragment2, not_equal, props, append_styles, dirty = [-1]) {
+  const parent_component = current_component;
+  set_current_component(component);
+  const $$ = component.$$ = {
     fragment: null,
     ctx: [],
-    props: s,
-    update: m,
-    not_equal: f,
-    bound: O(),
+    props,
+    update: noop,
+    not_equal,
+    bound: blank_object(),
     on_mount: [],
     on_destroy: [],
     on_disconnect: [],
     before_update: [],
     after_update: [],
-    context: new Map(e.context || (u ? u.$$.context : [])),
-    callbacks: O(),
-    dirty: c,
-    skip_bound: !1,
-    root: e.target || u.$$.root
+    context: new Map(options.context || (parent_component ? parent_component.$$.context : [])),
+    callbacks: blank_object(),
+    dirty,
+    skip_bound: false,
+    root: options.target || parent_component.$$.root
   };
-  i && i(o.root);
-  let _ = !1;
-  if (o.ctx = n ? n(t, e.props || {}, (l, k, ...N) => {
-    const A = N.length ? N[0] : k;
-    return o.ctx && f(o.ctx[l], o.ctx[l] = A) && (!o.skip_bound && o.bound[l] && o.bound[l](A), _ && Z(t, l)), k;
-  }) : [], o.update(), _ = !0, x(o.before_update), o.fragment = r ? r(o.ctx) : !1, e.target) {
-    if (e.hydrate) {
-      const l = Q(e.target);
-      o.fragment && o.fragment.l(l), l.forEach(b);
-    } else
-      o.fragment && o.fragment.c();
-    e.intro && F(t.$$.fragment), G(t, e.target, e.anchor, e.customElement), D();
+  append_styles && append_styles($$.root);
+  let ready = false;
+  $$.ctx = instance2 ? instance2(component, options.props || {}, (i, ret, ...rest) => {
+    const value = rest.length ? rest[0] : ret;
+    if ($$.ctx && not_equal($$.ctx[i], $$.ctx[i] = value)) {
+      if (!$$.skip_bound && $$.bound[i])
+        $$.bound[i](value);
+      if (ready)
+        make_dirty(component, i);
+    }
+    return ret;
+  }) : [];
+  $$.update();
+  ready = true;
+  run_all($$.before_update);
+  $$.fragment = create_fragment2 ? create_fragment2($$.ctx) : false;
+  if (options.target) {
+    if (options.hydrate) {
+      const nodes = children(options.target);
+      $$.fragment && $$.fragment.l(nodes);
+      nodes.forEach(detach);
+    } else {
+      $$.fragment && $$.fragment.c();
+    }
+    if (options.intro)
+      transition_in(component.$$.fragment);
+    mount_component(component, options.target, options.anchor, options.customElement);
+    flush();
   }
-  h(u);
+  set_current_component(parent_component);
 }
-class J {
+class SvelteComponent {
   $destroy() {
-    H(this, 1), this.$destroy = m;
+    destroy_component(this, 1);
+    this.$destroy = noop;
   }
-  $on(e, n) {
-    if (!M(n))
-      return m;
-    const r = this.$$.callbacks[e] || (this.$$.callbacks[e] = []);
-    return r.push(n), () => {
-      const f = r.indexOf(n);
-      f !== -1 && r.splice(f, 1);
+  $on(type, callback) {
+    if (!is_function(callback)) {
+      return noop;
+    }
+    const callbacks = this.$$.callbacks[type] || (this.$$.callbacks[type] = []);
+    callbacks.push(callback);
+    return () => {
+      const index = callbacks.indexOf(callback);
+      if (index !== -1)
+        callbacks.splice(index, 1);
     };
   }
-  $set(e) {
-    this.$$set && !K(e) && (this.$$.skip_bound = !0, this.$$set(e), this.$$.skip_bound = !1);
+  $set($$props) {
+    if (this.$$set && !is_empty($$props)) {
+      this.$$.skip_bound = true;
+      this.$$set($$props);
+      this.$$.skip_bound = false;
+    }
   }
 }
-function tt(t) {
-  let e, n, r, f;
+function create_fragment$1(ctx) {
+  let p;
+  let t0;
+  let t1;
+  let t2;
   return {
     c() {
-      e = q("p"), n = a("Component "), r = a(t[0]), f = a(" works");
+      p = element("p");
+      t0 = text("Component ");
+      t1 = text(ctx[0]);
+      t2 = text(" works");
     },
-    m(s, i) {
-      v(s, e, i), d(e, n), d(e, r), d(e, f);
+    m(target, anchor) {
+      insert(target, p, anchor);
+      append(p, t0);
+      append(p, t1);
+      append(p, t2);
     },
-    p(s, [i]) {
-      i & 1 && z(r, s[0]);
+    p(ctx2, [dirty]) {
+      if (dirty & 1)
+        set_data(t1, ctx2[0]);
     },
-    i: m,
-    o: m,
-    d(s) {
-      s && b(e);
+    i: noop,
+    o: noop,
+    d(detaching) {
+      if (detaching)
+        detach(p);
     }
   };
 }
-function et(t, e, n) {
-  let { label: r = "empty" } = e;
-  return t.$$set = (f) => {
-    "label" in f && n(0, r = f.label);
-  }, [r];
+function instance$1($$self, $$props, $$invalidate) {
+  let { label = "empty" } = $$props;
+  $$self.$$set = ($$props2) => {
+    if ("label" in $$props2)
+      $$invalidate(0, label = $$props2.label);
+  };
+  return [label];
 }
-class nt extends J {
-  constructor(e) {
-    super(), I(this, e, et, tt, P, { label: 0 });
+class Component extends SvelteComponent {
+  constructor(options) {
+    super();
+    init(this, options, instance$1, create_fragment$1, safe_not_equal, { label: 0 });
   }
 }
-function rt(t) {
-  let e, n, r, f, s, i, c;
-  return i = new nt({ props: { label: t[0] } }), {
+function create_fragment(ctx) {
+  let p;
+  let t0;
+  let t1;
+  let t2;
+  let t3;
+  let component;
+  let current;
+  component = new Component({ props: { label: ctx[0] } });
+  return {
     c() {
-      e = q("p"), n = a("App "), r = a(t[0]), f = a(" works"), s = L(), Y(i.$$.fragment);
+      p = element("p");
+      t0 = text("App ");
+      t1 = text(ctx[0]);
+      t2 = text(" works");
+      t3 = space();
+      create_component(component.$$.fragment);
     },
-    m(u, o) {
-      v(u, e, o), d(e, n), d(e, r), d(e, f), v(u, s, o), G(i, u, o), c = !0;
+    m(target, anchor) {
+      insert(target, p, anchor);
+      append(p, t0);
+      append(p, t1);
+      append(p, t2);
+      insert(target, t3, anchor);
+      mount_component(component, target, anchor);
+      current = true;
     },
-    p(u, [o]) {
-      (!c || o & 1) && z(r, u[0]);
-      const _ = {};
-      o & 1 && (_.label = u[0]), i.$set(_);
+    p(ctx2, [dirty]) {
+      if (!current || dirty & 1)
+        set_data(t1, ctx2[0]);
+      const component_changes = {};
+      if (dirty & 1)
+        component_changes.label = ctx2[0];
+      component.$set(component_changes);
     },
-    i(u) {
-      c || (F(i.$$.fragment, u), c = !0);
+    i(local) {
+      if (current)
+        return;
+      transition_in(component.$$.fragment, local);
+      current = true;
     },
-    o(u) {
-      X(i.$$.fragment, u), c = !1;
+    o(local) {
+      transition_out(component.$$.fragment, local);
+      current = false;
     },
-    d(u) {
-      u && b(e), u && b(s), H(i, u);
+    d(detaching) {
+      if (detaching)
+        detach(p);
+      if (detaching)
+        detach(t3);
+      destroy_component(component, detaching);
     }
   };
 }
-function ot(t, e, n) {
-  let { label: r = "empty" } = e;
-  return t.$$set = (f) => {
-    "label" in f && n(0, r = f.label);
-  }, [r];
+function instance($$self, $$props, $$invalidate) {
+  let { label = "empty" } = $$props;
+  $$self.$$set = ($$props2) => {
+    if ("label" in $$props2)
+      $$invalidate(0, label = $$props2.label);
+  };
+  return [label];
 }
-class ft extends J {
-  constructor(e) {
-    super(), I(this, e, ot, rt, P, { label: 0 });
+class App extends SvelteComponent {
+  constructor(options) {
+    super();
+    init(this, options, instance, create_fragment, safe_not_equal, { label: 0 });
   }
 }
 export {
-  ft as App
+  App
 };

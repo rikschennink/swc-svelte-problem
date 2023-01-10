@@ -31,9 +31,6 @@ function _inherits(subClass, superClass) {
         }
     }), superClass && _setPrototypeOf(subClass, superClass);
 }
-function _possibleConstructorReturn(self, call) {
-    return call && ("object" === _typeof(call) || "function" == typeof call) ? call : _assertThisInitialized(self);
-}
 function _setPrototypeOf(o, p) {
     return _setPrototypeOf = Object.setPrototypeOf || function _setPrototypeOf(o, p) {
         return o.__proto__ = p, o;
@@ -63,9 +60,6 @@ function _slicedToArray(arr, i) {
         throw new TypeError("Invalid attempt to destructure non-iterable instance.\\nIn order to be iterable, non-array objects must have a [Symbol.iterator]() method.");
     }();
 }
-var j, W, _typeof = function(obj) {
-    return obj && "undefined" != typeof Symbol && obj.constructor === Symbol ? "symbol" : typeof obj;
-};
 function _unsupportedIterableToArray(o, minLen) {
     if (o) {
         if ("string" == typeof o) return _arrayLikeToArray(o, minLen);
@@ -85,261 +79,261 @@ function _createSuper(Derived) {
         }
     }();
     return function() {
-        var result, Super = _getPrototypeOf(Derived);
+        var call, result, Super = _getPrototypeOf(Derived);
         if (hasNativeReflectConstruct) {
             var NewTarget = _getPrototypeOf(this).constructor;
             result = Reflect.construct(Super, arguments, NewTarget);
         } else result = Super.apply(this, arguments);
-        return _possibleConstructorReturn(this, result);
+        return (call = result) && ("object" == (call && "undefined" != typeof Symbol && call.constructor === Symbol ? "symbol" : typeof call) || "function" == typeof call) ? call : _assertThisInitialized(this);
     };
 }
-function m() {}
-function B(t) {
-    return t();
+function noop() {}
+function run(fn) {
+    return fn();
 }
-function O() {
+function blank_object() {
     return Object.create(null);
 }
-function x(t) {
-    t.forEach(B);
+function run_all(fns) {
+    fns.forEach(run);
 }
-function M(t) {
-    return "function" == typeof t;
+function is_function(thing) {
+    return "function" == typeof thing;
 }
-function P(t, e) {
-    return t != t ? e == e : t !== e || t && "object" == typeof t || "function" == typeof t;
+function safe_not_equal(a, b) {
+    return a != a ? b == b : a !== b || a && "object" == typeof a || "function" == typeof a;
 }
-function d(t, e) {
-    t.appendChild(e);
+function append(target, node) {
+    target.appendChild(node);
 }
-function v(t, e, n) {
-    t.insertBefore(e, n || null);
+function insert(target, node, anchor) {
+    target.insertBefore(node, anchor || null);
 }
-function b(t) {
-    t.parentNode && t.parentNode.removeChild(t);
+function detach(node) {
+    node.parentNode && node.parentNode.removeChild(node);
 }
-function q(t) {
-    return document.createElement(t);
+function element(name) {
+    return document.createElement(name);
 }
-function a(t) {
-    return document.createTextNode(t);
+function text(data) {
+    return document.createTextNode(data);
 }
-function z(t, e) {
-    e = "" + e, t.wholeText !== e && (t.data = e);
+function set_data(text2, data) {
+    data = "" + data, text2.wholeText !== data && (text2.data = data);
 }
-var p = [], S = [], g = [], T = [], R = Promise.resolve(), E = !1;
-function C(t) {
-    g.push(t);
+var current_component, outros, dirty_components = [], binding_callbacks = [], render_callbacks = [], flush_callbacks = [], resolved_promise = Promise.resolve(), update_scheduled = !1;
+function add_render_callback(fn) {
+    render_callbacks.push(fn);
 }
-var w = new Set(), $ = 0;
-function D() {
+var seen_callbacks = new Set(), flushidx = 0;
+function flush() {
     do {
-        for(; $ < p.length;){
-            var e = p[$];
-            $++, j = e, function(t) {
-                if (null !== t.fragment) {
-                    t.update(), x(t.before_update);
-                    var e = t.dirty;
-                    t.dirty = [
+        for(; flushidx < dirty_components.length;){
+            var component = dirty_components[flushidx];
+            flushidx++, current_component = component, function($$) {
+                if (null !== $$.fragment) {
+                    $$.update(), run_all($$.before_update);
+                    var dirty = $$.dirty;
+                    $$.dirty = [
                         -1
-                    ], t.fragment && t.fragment.p(t.ctx, e), t.after_update.forEach(C);
+                    ], $$.fragment && $$.fragment.p($$.ctx, dirty), $$.after_update.forEach(add_render_callback);
                 }
-            }(e.$$);
+            }(component.$$);
         }
-        for(j = null, p.length = 0, $ = 0; S.length;)S.pop()();
-        for(var e1 = 0; e1 < g.length; e1 += 1){
-            var n = g[e1];
-            w.has(n) || (w.add(n), n());
+        for(current_component = null, dirty_components.length = 0, flushidx = 0; binding_callbacks.length;)binding_callbacks.pop()();
+        for(var i = 0; i < render_callbacks.length; i += 1){
+            var callback = render_callbacks[i];
+            seen_callbacks.has(callback) || (seen_callbacks.add(callback), callback());
         }
-        g.length = 0;
-    }while (p.length);
-    for(; T.length;)T.pop()();
-    E = !1, w.clear();
+        render_callbacks.length = 0;
+    }while (dirty_components.length);
+    for(; flush_callbacks.length;)flush_callbacks.pop()();
+    update_scheduled = !1, seen_callbacks.clear();
 }
-var y = new Set();
-function F(t, e) {
-    t && t.i && (y.delete(t), t.i(e));
+var outroing = new Set();
+function transition_in(block, local) {
+    block && block.i && (outroing.delete(block), block.i(local));
 }
-function G(t, e, n, r) {
-    var _t_$$ = t.$$, f = _t_$$.fragment, s = _t_$$.after_update;
-    f && f.m(e, n), r || C(function() {
-        var _t_$$_on_destroy, i = t.$$.on_mount.map(B).filter(M);
-        t.$$.on_destroy ? (_t_$$_on_destroy = t.$$.on_destroy).push.apply(_t_$$_on_destroy, function(arr) {
+function mount_component(component, target, anchor, customElement) {
+    var _component_$$ = component.$$, fragment = _component_$$.fragment, after_update = _component_$$.after_update;
+    fragment && fragment.m(target, anchor), customElement || add_render_callback(function() {
+        var _component_$$_on_destroy, new_on_destroy = component.$$.on_mount.map(run).filter(is_function);
+        component.$$.on_destroy ? (_component_$$_on_destroy = component.$$.on_destroy).push.apply(_component_$$_on_destroy, function(arr) {
             if (Array.isArray(arr)) return _arrayLikeToArray(arr);
-        }(i) || function(iter) {
+        }(new_on_destroy) || function(iter) {
             if ("undefined" != typeof Symbol && null != iter[Symbol.iterator] || null != iter["@@iterator"]) return Array.from(iter);
-        }(i) || _unsupportedIterableToArray(i) || function() {
+        }(new_on_destroy) || _unsupportedIterableToArray(new_on_destroy) || function() {
             throw new TypeError("Invalid attempt to spread non-iterable instance.\\nIn order to be iterable, non-array objects must have a [Symbol.iterator]() method.");
-        }()) : x(i), t.$$.on_mount = [];
-    }), s.forEach(C);
+        }()) : run_all(new_on_destroy), component.$$.on_mount = [];
+    }), after_update.forEach(add_render_callback);
 }
-function H(t, e) {
-    var n = t.$$;
-    null !== n.fragment && (x(n.on_destroy), n.fragment && n.fragment.d(e), n.on_destroy = n.fragment = null, n.ctx = []);
+function destroy_component(component, detaching) {
+    var $$ = component.$$;
+    null !== $$.fragment && (run_all($$.on_destroy), $$.fragment && $$.fragment.d(detaching), $$.on_destroy = $$.fragment = null, $$.ctx = []);
 }
-function I(t, e, n, r, f, s, i) {
-    var c = arguments.length > 7 && void 0 !== arguments[7] ? arguments[7] : [
+function init(component, options, instance2, create_fragment2, not_equal, props, append_styles) {
+    var dirty = arguments.length > 7 && void 0 !== arguments[7] ? arguments[7] : [
         -1
     ];
-    j = t;
-    var o = t.$$ = {
+    current_component = component;
+    var $$ = component.$$ = {
         fragment: null,
         ctx: [],
-        props: s,
-        update: m,
-        not_equal: f,
-        bound: O(),
+        props: props,
+        update: noop,
+        not_equal: not_equal,
+        bound: blank_object(),
         on_mount: [],
         on_destroy: [],
         on_disconnect: [],
         before_update: [],
         after_update: [],
-        context: new Map(e.context || (j ? j.$$.context : [])),
-        callbacks: O(),
-        dirty: c,
+        context: new Map(options.context || (current_component ? current_component.$$.context : [])),
+        callbacks: blank_object(),
+        dirty: dirty,
         skip_bound: !1,
-        root: e.target || j.$$.root
+        root: options.target || current_component.$$.root
     };
-    i && i(o.root);
-    var _ = !1;
-    if (o.ctx = n ? n(t, e.props || {}, function(l, k) {
-        for(var t1, _len = arguments.length, N = Array(_len > 2 ? _len - 2 : 0), _key = 2; _key < _len; _key++)N[_key - 2] = arguments[_key];
-        var A = N.length ? N[0] : k;
-        return o.ctx && f(o.ctx[l], o.ctx[l] = A) && (!o.skip_bound && o.bound[l] && o.bound[l](A), _ && (-1 === (t1 = t).$$.dirty[0] && (p.push(t1), E || (E = !0, R.then(D)), t1.$$.dirty.fill(0)), t1.$$.dirty[l / 31 | 0] |= 1 << l % 31)), k;
-    }) : [], o.update(), _ = !0, x(o.before_update), o.fragment = !!r && r(o.ctx), e.target) {
-        if (e.hydrate) {
-            var l = Array.from(e.target.childNodes);
-            o.fragment && o.fragment.l(l), l.forEach(b);
-        } else o.fragment && o.fragment.c();
-        e.intro && F(t.$$.fragment), G(t, e.target, e.anchor, e.customElement), D();
+    append_styles && append_styles($$.root);
+    var ready = !1;
+    if ($$.ctx = instance2 ? instance2(component, options.props || {}, function(i, ret) {
+        for(var component1, _len = arguments.length, rest = Array(_len > 2 ? _len - 2 : 0), _key = 2; _key < _len; _key++)rest[_key - 2] = arguments[_key];
+        var value = rest.length ? rest[0] : ret;
+        return $$.ctx && not_equal($$.ctx[i], $$.ctx[i] = value) && (!$$.skip_bound && $$.bound[i] && $$.bound[i](value), ready) && (-1 === (component1 = component).$$.dirty[0] && (dirty_components.push(component1), update_scheduled || (update_scheduled = !0, resolved_promise.then(flush)), component1.$$.dirty.fill(0)), component1.$$.dirty[i / 31 | 0] |= 1 << i % 31), ret;
+    }) : [], $$.update(), ready = !0, run_all($$.before_update), $$.fragment = !!create_fragment2 && create_fragment2($$.ctx), options.target) {
+        if (options.hydrate) {
+            var nodes = Array.from(options.target.childNodes);
+            $$.fragment && $$.fragment.l(nodes), nodes.forEach(detach);
+        } else $$.fragment && $$.fragment.c();
+        options.intro && transition_in(component.$$.fragment), mount_component(component, options.target, options.anchor, options.customElement), flush();
     }
 }
-var J = function() {
+var SvelteComponent = function() {
     "use strict";
     var staticProps;
-    function J() {
-        _classCallCheck(this, J);
+    function SvelteComponent() {
+        _classCallCheck(this, SvelteComponent);
     }
-    return _defineProperties(J.prototype, [
+    return _defineProperties(SvelteComponent.prototype, [
         {
             key: "$destroy",
             value: function() {
-                H(this, 1), this.$destroy = m;
+                destroy_component(this, 1), this.$destroy = noop;
             }
         },
         {
             key: "$on",
-            value: function(e, n) {
-                if (!M(n)) return m;
-                var r = this.$$.callbacks[e] || (this.$$.callbacks[e] = []);
-                return r.push(n), function() {
-                    var f = r.indexOf(n);
-                    -1 !== f && r.splice(f, 1);
+            value: function(type, callback) {
+                if (!is_function(callback)) return noop;
+                var callbacks = this.$$.callbacks[type] || (this.$$.callbacks[type] = []);
+                return callbacks.push(callback), function() {
+                    var index = callbacks.indexOf(callback);
+                    -1 !== index && callbacks.splice(index, 1);
                 };
             }
         },
         {
             key: "$set",
-            value: function(e) {
-                this.$$set && 0 !== Object.keys(e).length && (this.$$.skip_bound = !0, this.$$set(e), this.$$.skip_bound = !1);
+            value: function($$props) {
+                this.$$set && 0 !== Object.keys($$props).length && (this.$$.skip_bound = !0, this.$$set($$props), this.$$.skip_bound = !1);
             }
         }
-    ]), staticProps && _defineProperties(J, staticProps), J;
+    ]), staticProps && _defineProperties(SvelteComponent, staticProps), SvelteComponent;
 }();
-function tt(t) {
-    var e, n, r, f;
+function create_fragment$1(ctx) {
+    var p, t0, t1, t2;
     return {
         c: function() {
-            e = q("p"), n = a("Component "), r = a(t[0]), f = a(" works");
+            p = element("p"), t0 = text("Component "), t1 = text(ctx[0]), t2 = text(" works");
         },
-        m: function(s, i) {
-            v(s, e, i), d(e, n), d(e, r), d(e, f);
+        m: function(target, anchor) {
+            insert(target, p, anchor), append(p, t0), append(p, t1), append(p, t2);
         },
-        p: function(s, param) {
-            1 & _slicedToArray(param, 1)[0] && z(r, s[0]);
+        p: function(ctx2, param) {
+            1 & _slicedToArray(param, 1)[0] && set_data(t1, ctx2[0]);
         },
-        i: m,
-        o: m,
-        d: function(s) {
-            s && b(e);
+        i: noop,
+        o: noop,
+        d: function(detaching) {
+            detaching && detach(p);
         }
     };
 }
-function et(t, e, n) {
-    var tmp = e.label, r = void 0 === tmp ? "empty" : tmp;
-    return t.$$set = function(f) {
-        "label" in f && n(0, r = f.label);
+function instance$1($$self, $$props, $$invalidate) {
+    var _$$props_label = $$props.label, label = void 0 === _$$props_label ? "empty" : _$$props_label;
+    return $$self.$$set = function($$props2) {
+        "label" in $$props2 && $$invalidate(0, label = $$props2.label);
     }, [
-        r
+        label
     ];
 }
-var nt = function(J) {
+var Component = function(SvelteComponent) {
     "use strict";
-    _inherits(nt, J);
-    var _super = _createSuper(nt);
-    function nt(e) {
+    _inherits(Component, SvelteComponent);
+    var _super = _createSuper(Component);
+    function Component(options) {
         var _this;
-        return _classCallCheck(this, nt), I(_assertThisInitialized(_this = _super.call(this)), e, et, tt, P, {
+        return _classCallCheck(this, Component), init(_assertThisInitialized(_this = _super.call(this)), options, instance$1, create_fragment$1, safe_not_equal, {
             label: 0
-        }), _possibleConstructorReturn(_this);
+        }), _this;
     }
-    return nt;
-}(J);
-function rt(t) {
-    var e, n, r, f, s, i, c;
-    return i = new nt({
+    return Component;
+}(SvelteComponent);
+function create_fragment(ctx) {
+    var p, t0, t1, t2, t3, component, current;
+    return component = new Component({
         props: {
-            label: t[0]
+            label: ctx[0]
         }
     }), {
         c: function() {
-            var t1;
-            e = q("p"), n = a("App "), r = a(t[0]), f = a(" works"), s = a(" "), (t1 = i.$$.fragment) && t1.c();
+            var block;
+            p = element("p"), t0 = text("App "), t1 = text(ctx[0]), t2 = text(" works"), t3 = text(" "), (block = component.$$.fragment) && block.c();
         },
-        m: function(u, o) {
-            v(u, e, o), d(e, n), d(e, r), d(e, f), v(u, s, o), G(i, u, o), c = !0;
+        m: function(target, anchor) {
+            insert(target, p, anchor), append(p, t0), append(p, t1), append(p, t2), insert(target, t3, anchor), mount_component(component, target, anchor), current = !0;
         },
-        p: function(u, param) {
-            var o = _slicedToArray(param, 1)[0];
-            (!c || 1 & o) && z(r, u[0]);
-            var _ = {};
-            1 & o && (_.label = u[0]), i.$set(_);
+        p: function(ctx2, param) {
+            var dirty = _slicedToArray(param, 1)[0];
+            (!current || 1 & dirty) && set_data(t1, ctx2[0]);
+            var component_changes = {};
+            1 & dirty && (component_changes.label = ctx2[0]), component.$set(component_changes);
         },
-        i: function(u) {
-            c || (F(i.$$.fragment, u), c = !0);
+        i: function(local) {
+            current || (transition_in(component.$$.fragment, local), current = !0);
         },
-        o: function(u) {
-            var t, r;
-            (t = i.$$.fragment) && t.o ? y.has(t) || (y.add(t), W.c.push(function() {
-                y.delete(t), r && r();
-            }), t.o(u)) : r && r(), c = !1;
+        o: function(local) {
+            var block, callback;
+            (block = component.$$.fragment) && block.o ? outroing.has(block) || (outroing.add(block), outros.c.push(function() {
+                outroing.delete(block), callback && callback();
+            }), block.o(local)) : callback && callback(), current = !1;
         },
-        d: function(u) {
-            u && b(e), u && b(s), H(i, u);
+        d: function(detaching) {
+            detaching && detach(p), detaching && detach(t3), destroy_component(component, detaching);
         }
     };
 }
-function ot(t, e, n) {
-    var tmp = e.label, r = void 0 === tmp ? "empty" : tmp;
-    return t.$$set = function(f) {
-        "label" in f && n(0, r = f.label);
+function instance($$self, $$props, $$invalidate) {
+    var _$$props_label = $$props.label, label = void 0 === _$$props_label ? "empty" : _$$props_label;
+    return $$self.$$set = function($$props2) {
+        "label" in $$props2 && $$invalidate(0, label = $$props2.label);
     }, [
-        r
+        label
     ];
 }
-var ft = function(J) {
+var App = function(SvelteComponent) {
     "use strict";
-    _inherits(ft, J);
-    var _super = _createSuper(ft);
-    function ft(e) {
+    _inherits(App, SvelteComponent);
+    var _super = _createSuper(App);
+    function App(options) {
         var _this;
-        return _classCallCheck(this, ft), I(_assertThisInitialized(_this = _super.call(this)), e, ot, rt, P, {
+        return _classCallCheck(this, App), init(_assertThisInitialized(_this = _super.call(this)), options, instance, create_fragment, safe_not_equal, {
             label: 0
-        }), _possibleConstructorReturn(_this);
+        }), _this;
     }
-    return ft;
-}(J);
-export { ft as App };
+    return App;
+}(SvelteComponent);
+export { App };
 
 
 //# sourceMappingURL=test-swc.js.map

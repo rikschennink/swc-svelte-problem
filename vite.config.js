@@ -7,6 +7,7 @@ const NAME = 'Test';
 export default defineConfig({
     base: './',
     build: {
+        minify: false,
         outDir: 'dist',
         lib: {
             entry: resolve(__dirname, 'src/main.js'),
