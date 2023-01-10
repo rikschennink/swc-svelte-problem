@@ -1,0 +1,8 @@
+{
+    "jsc": {
+        "minify": {
+            "compress": true, // set to false and it no longer errors
+            "mangle": false
+        }
+    }
+}

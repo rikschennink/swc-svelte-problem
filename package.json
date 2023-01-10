@@ -1,0 +1,18 @@
+{
+    "private": true,
+    "name": "swcsvelteproblem",
+    "version": "0.0.0",
+    "type": "module",
+    "scripts": {
+        "build": "npm run build-vite && npm run build-swc",
+        "build-vite": "vite build --config vite.config.js",
+        "build-swc": "swc ./dist/test-vite.js -o ./dist/test-swc.js"
+    },
+    "devDependencies": {
+        "@sveltejs/vite-plugin-svelte": "^1.1.0",
+        "svelte": "^3.52.0",
+        "vite": "^3.2.3",
+        "@swc/cli": "^0.1.59",
+        "@swc/core": "^1.3.25"
+    }
+}
